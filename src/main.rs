@@ -1,5 +1,5 @@
 use specs::{
-    Builder, Component, DispatcherBuilder, ReadExpect, ReadStorage, RunNow, System, VecStorage,
+    Builder, Component, DispatcherBuilder, Entities, ReadExpect, ReadStorage, System, VecStorage,
     World, WorldExt, WriteStorage,
 };
 
@@ -23,13 +23,13 @@ struct DeltaTime(f32);
 struct PrintWorld;
 
 impl<'a> System<'a> for PrintWorld {
-    type SystemData = ReadStorage<'a, Position>;
+    type SystemData = (Entities<'a>, ReadStorage<'a, Position>);
 
-    fn run(&mut self, position: Self::SystemData) {
+    fn run(&mut self, (entities, position): Self::SystemData) {
         use specs::Join;
 
-        for pos in position.join() {
-            println!("{:?}", pos);
+        for (entity, pos) in (&entities, &position).join() {
+            println!("{}: {:?}", entity.id(), pos);
         }
     }
 }
