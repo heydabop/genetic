@@ -1,6 +1,6 @@
 use rand::{
     distributions::{Distribution, Uniform},
-    thread_rng,
+    thread_rng, Rng,
 };
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
@@ -10,6 +10,7 @@ use specs::{
     prelude::*, Builder, Component, DispatcherBuilder, Entities, NullStorage, ReadExpect,
     ReadStorage, System, VecStorage, World, WorldExt, WriteStorage,
 };
+use std::collections::HashSet;
 use std::f32::consts::PI;
 use std::thread;
 use std::time::Duration;
@@ -62,6 +63,8 @@ struct DeltaTime(f32);
 
 struct MaxPos(Position);
 
+struct HitTargets(HashSet<specs::world::Index>);
+
 struct ApplyVelocity;
 
 impl<'a> System<'a> for ApplyVelocity {
@@ -89,15 +92,18 @@ impl<'a> System<'a> for CollisionCheck {
         ReadStorage<'a, Position>,
         WriteStorage<'a, Agent>,
         ReadStorage<'a, Target>,
+        WriteExpect<'a, HitTargets>,
         Entities<'a>,
     );
 
-    fn run(&mut self, (position, mut agent, target, entities): Self::SystemData) {
+    fn run(&mut self, (position, mut agent, target, mut hit_targets, entities): Self::SystemData) {
+        let hit_targets = &mut (hit_targets.0);
         for (pos, agent) in (&position, &mut agent).join() {
             for (target, _, e) in (&position, &target, &entities).join() {
                 if (pos.x - target.x).abs() < 5.0 && (pos.y - target.y).abs() < 5.0 {
                     // It's possible for multiple agents to hit the same target in a single tick here
                     // I'm okay with this because it seems "confusing" for an agent to follow behavior that normally results in a hit and it suddenly get nothing
+                    hit_targets.insert(e.id());
                     entities
                         .delete(e)
                         .expect("Unable to delete target on collision");
@@ -106,6 +112,40 @@ impl<'a> System<'a> for CollisionCheck {
                 }
             }
         }
+    }
+}
+
+struct SpawnNewTargets;
+
+impl<'a> System<'a> for SpawnNewTargets {
+    type SystemData = (
+        WriteStorage<'a, Position>,
+        WriteStorage<'a, Target>,
+        WriteExpect<'a, HitTargets>,
+        ReadExpect<'a, MaxPos>,
+        Entities<'a>,
+    );
+
+    fn run(
+        &mut self,
+        (mut position, mut target, mut hit_targets, max, entities): Self::SystemData,
+    ) {
+        let max = max.0;
+        hit_targets.0.drain().for_each(|_| {
+            let t = entities.create();
+            target
+                .insert(t, Target)
+                .expect("Unable to insert new Target");
+            position
+                .insert(
+                    t,
+                    Position {
+                        x: thread_rng().gen_range(0.0..max.x),
+                        y: thread_rng().gen_range(0.0..max.y),
+                    },
+                )
+                .expect("Unable to insert new target Position");
+        });
     }
 }
 
@@ -139,6 +179,7 @@ fn main() {
         x: window_width as f32,
         y: window_height as f32,
     }));
+    world.insert(HitTargets(HashSet::<specs::world::Index>::new()));
     world.register::<Agent>();
     world.register::<Target>();
     world.register::<Position>();
@@ -195,6 +236,7 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new()
         .with(ApplyVelocity, "apply_velocity", &[])
         .with(CollisionCheck, "collision_check", &["apply_velocity"])
+        .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
         .build();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
