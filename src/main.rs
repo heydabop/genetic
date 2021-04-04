@@ -2,7 +2,6 @@ use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use sdl2::rect::Point;
 use specs::{
     prelude::*, Builder, Component, DispatcherBuilder, Entities, ReadExpect, ReadStorage, System,
     VecStorage, World, WorldExt, WriteStorage,
@@ -125,23 +124,17 @@ fn main() {
             for (p, v) in (&position, (&velocity).maybe()).join() {
                 if let Some(v) = v {
                     let mut heading = v.heading;
-                    let top = Point::new(
-                        (p.x + heading.cos() * 8.0).round() as i32,
-                        (p.y + heading.sin() * 8.0).round() as i32,
-                    );
+                    let x1 = (p.x + heading.cos() * 8.0).round() as i16;
+                    let y1 = (p.y + heading.sin() * 8.0).round() as i16;
                     heading -= 1.0 / 2.0 * PI;
-                    let left = Point::new(
-                        (p.x + heading.cos() * 4.0).round() as i32,
-                        (p.y + heading.sin() * 4.0).round() as i32,
-                    );
+                    let x2 = (p.x + heading.cos() * 4.0).round() as i16;
+                    let y2 = (p.y + heading.sin() * 4.0).round() as i16;
                     heading += PI;
-                    let right = Point::new(
-                        (p.x + heading.cos() * 4.0).round() as i32,
-                        (p.y + heading.sin() * 4.0).round() as i32,
-                    );
-                    canvas.draw_lines(&[top, left, right, top][..])
+                    let x3 = (p.x + heading.cos() * 4.0).round() as i16;
+                    let y3 = (p.y + heading.sin() * 4.0).round() as i16;
+                    canvas.aa_trigon(x1, y1, x2, y2, x3, y3, canvas.draw_color())
                 } else {
-                    canvas.circle(
+                    canvas.aa_circle(
                         p.x.round() as i16,
                         p.y.round() as i16,
                         3,
