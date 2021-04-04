@@ -10,9 +10,31 @@ use std::f32::consts::PI;
 use std::thread;
 use std::time::Duration;
 
-#[derive(Component, Debug, Default)]
-#[storage(NullStorage)]
-struct Agent;
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+struct Agent {
+    score: i32,
+}
+
+impl Agent {
+    pub fn new() -> Self {
+        Self { score: 0 }
+    }
+
+    pub fn inc(&mut self) {
+        self.score += 1;
+    }
+
+    pub fn score(&self) -> i32 {
+        self.score
+    }
+}
+
+impl Default for Agent {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Component, Debug, Default)]
 #[storage(NullStorage)]
@@ -82,18 +104,22 @@ struct CollisionCheck;
 impl<'a> System<'a> for CollisionCheck {
     type SystemData = (
         ReadStorage<'a, Position>,
-        ReadStorage<'a, Agent>,
+        WriteStorage<'a, Agent>,
         ReadStorage<'a, Target>,
         Entities<'a>,
     );
 
-    fn run(&mut self, (position, agent, target, entities): Self::SystemData) {
-        for (agent, _) in (&position, &agent).join() {
+    fn run(&mut self, (position, mut agent, target, entities): Self::SystemData) {
+        for (pos, agent) in (&position, &mut agent).join() {
             for (target, _, e) in (&position, &target, &entities).join() {
-                if (agent.x - target.x).abs() < 5.0 && (agent.y - target.y).abs() < 5.0 {
+                if (pos.x - target.x).abs() < 5.0 && (pos.y - target.y).abs() < 5.0 {
+                    // It's possible for multiple agents to hit the same target in a single tick here
+                    // I'm okay with this because it seems "confusing" for an agent to follow behavior that normally results in a hit and it suddenly get nothing
                     entities
                         .delete(e)
                         .expect("Unable to delete target on collision");
+                    agent.inc();
+                    println!("Score: {}", agent.score());
                 }
             }
         }
@@ -143,7 +169,7 @@ fn main() {
         .build();
     world
         .create_entity()
-        .with(Agent)
+        .with(Agent::new())
         .with(Position { x: 100.0, y: 200.0 })
         .with(Velocity {
             heading: 1.0 / 4.0 * PI,
