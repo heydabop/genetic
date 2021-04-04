@@ -1,4 +1,5 @@
 use sdl2::event::Event;
+use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
@@ -102,30 +103,55 @@ fn main() {
         .with(Position { x: 100.0, y: 200.0 })
         .with(Velocity {
             heading: 1.0 / 4.0 * PI,
-            magnitude: 10.0,
+            magnitude: 30.0,
         })
         .build();
 
     let mut dispatcher = DispatcherBuilder::new()
-        .with(PrintWorld, "print_world", &[])
-        .with(ApplyVelocity, "apply_velocity", &["print_world"])
-        .with(PrintWorld, "print_world_updated", &["apply_velocity"])
+        //.with(PrintWorld, "print_world", &[])
+        .with(ApplyVelocity, "apply_velocity", &[])
+        //.with(PrintWorld, "print_world_updated", &["apply_velocity"])
         .build();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
-        let points: Vec<Point> = world
-            .read_storage::<Position>()
-            .join()
-            .map(|p| Point::new(p.x.round() as i32, p.y.round() as i32))
-            .collect();
-
         canvas.set_draw_color(black);
         canvas.clear();
         canvas.set_draw_color(white);
-        canvas
-            .draw_points(&points[..])
-            .expect("Error rendering points");
+
+        {
+            let position = world.read_storage::<Position>();
+            let velocity = world.read_storage::<Velocity>();
+            for (p, v) in (&position, (&velocity).maybe()).join() {
+                if let Some(v) = v {
+                    let mut heading = v.heading;
+                    let top = Point::new(
+                        (p.x + heading.cos() * 8.0).round() as i32,
+                        (p.y + heading.sin() * 8.0).round() as i32,
+                    );
+                    heading -= 1.0 / 2.0 * PI;
+                    let left = Point::new(
+                        (p.x + heading.cos() * 4.0).round() as i32,
+                        (p.y + heading.sin() * 4.0).round() as i32,
+                    );
+                    heading += PI;
+                    let right = Point::new(
+                        (p.x + heading.cos() * 4.0).round() as i32,
+                        (p.y + heading.sin() * 4.0).round() as i32,
+                    );
+                    canvas.draw_lines(&[top, left, right, top][..])
+                } else {
+                    canvas.circle(
+                        p.x.round() as i16,
+                        p.y.round() as i16,
+                        3,
+                        canvas.draw_color(),
+                    )
+                }
+                .expect("Error drawing to buffer");
+            }
+        };
+
         canvas.present();
 
         for event in event_pump.poll_iter() {
@@ -141,6 +167,8 @@ fn main() {
 
         dispatcher.dispatch(&world);
         world.maintain();
-        thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        thread::sleep(Duration::from_secs_f32(
+            world.read_resource::<DeltaTime>().0,
+        ));
     }
 }
