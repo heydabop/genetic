@@ -104,9 +104,6 @@ impl<'a> System<'a> for CollisionCheck {
                     // It's possible for multiple agents to hit the same target in a single tick here
                     // I'm okay with this because it seems "confusing" for an agent to follow behavior that normally results in a hit and it suddenly get nothing
                     hit_targets.insert(e.id());
-                    entities
-                        .delete(e)
-                        .expect("Unable to delete target on collision");
                     agent.inc();
                     println!("Score: {}", agent.score());
                 }
@@ -120,31 +117,18 @@ struct SpawnNewTargets;
 impl<'a> System<'a> for SpawnNewTargets {
     type SystemData = (
         WriteStorage<'a, Position>,
-        WriteStorage<'a, Target>,
         WriteExpect<'a, HitTargets>,
         ReadExpect<'a, MaxPos>,
         Entities<'a>,
     );
 
-    fn run(
-        &mut self,
-        (mut position, mut target, mut hit_targets, max, entities): Self::SystemData,
-    ) {
+    fn run(&mut self, (mut position, mut hit_targets, max, entities): Self::SystemData) {
         let max = max.0;
-        hit_targets.0.drain().for_each(|_| {
-            let t = entities.create();
-            target
-                .insert(t, Target)
-                .expect("Unable to insert new Target");
-            position
-                .insert(
-                    t,
-                    Position {
-                        x: thread_rng().gen_range(0.0..max.x),
-                        y: thread_rng().gen_range(0.0..max.y),
-                    },
-                )
-                .expect("Unable to insert new target Position");
+        hit_targets.0.drain().for_each(|id| {
+            let t = entities.entity(id);
+            let pos = position.get_mut(t).expect("Unable to find old target");
+            pos.x = thread_rng().gen_range(0.0..max.x);
+            pos.y = thread_rng().gen_range(0.0..max.y);
         });
     }
 }
