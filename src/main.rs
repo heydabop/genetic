@@ -1,3 +1,7 @@
+use rand::{
+    distributions::{Distribution, Uniform},
+    thread_rng,
+};
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -40,7 +44,7 @@ impl Default for Agent {
 #[storage(NullStorage)]
 struct Target;
 
-#[derive(Component, Debug)]
+#[derive(Clone, Component, Copy, Debug)]
 #[storage(VecStorage)]
 struct Position {
     x: f32,
@@ -54,47 +58,26 @@ struct Velocity {
     magnitude: f32,
 }
 
-#[derive(Default)]
 struct DeltaTime(f32);
 
-struct PrintWorld;
-
-impl<'a> System<'a> for PrintWorld {
-    type SystemData = (Entities<'a>, ReadStorage<'a, Position>);
-
-    fn run(&mut self, (entities, position): Self::SystemData) {
-        for (entity, pos) in (&entities, &position).join() {
-            println!("{}: {:?}", entity.id(), pos);
-        }
-    }
-}
+struct MaxPos(Position);
 
 struct ApplyVelocity;
 
 impl<'a> System<'a> for ApplyVelocity {
     type SystemData = (
         ReadExpect<'a, DeltaTime>,
+        ReadExpect<'a, MaxPos>,
         WriteStorage<'a, Position>,
         ReadStorage<'a, Velocity>,
     );
 
-    fn run(&mut self, (delta, mut position, velocity): Self::SystemData) {
+    fn run(&mut self, (delta, max, mut position, velocity): Self::SystemData) {
         let delta = delta.0;
+        let max = max.0;
         for (pos, vel) in (&mut position, &velocity).join() {
-            pos.x += vel.heading.cos() * vel.magnitude * delta;
-            pos.y += vel.heading.sin() * vel.magnitude * delta;
-        }
-    }
-}
-
-struct DecayVelocity;
-
-impl<'a> System<'a> for DecayVelocity {
-    type SystemData = WriteStorage<'a, Velocity>;
-
-    fn run(&mut self, mut velocity: Self::SystemData) {
-        for vel in (&mut velocity).join() {
-            vel.magnitude *= 0.95;
+            pos.x = (pos.x + vel.heading.cos() * vel.magnitude * delta).rem_euclid(max.x);
+            pos.y = (pos.y + vel.heading.sin() * vel.magnitude * delta).rem_euclid(max.y);
         }
     }
 }
@@ -130,8 +113,13 @@ fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
+    let window_width = 800;
+    let window_height = 600;
+    let num_targets = 10;
+    let num_agents = 15;
+
     let window = video_subsystem
-        .window("genetic", 800, 600)
+        .window("genetic", window_width, window_height)
         .position_centered()
         .build()
         .unwrap();
@@ -147,6 +135,10 @@ fn main() {
 
     let mut world = World::new();
     world.insert(DeltaTime(1.0 / 60.0));
+    world.insert(MaxPos(Position {
+        x: window_width as f32,
+        y: window_height as f32,
+    }));
     world.register::<Agent>();
     world.register::<Target>();
     world.register::<Position>();
@@ -167,15 +159,38 @@ fn main() {
         .with(Target)
         .with(Position { x: 198.0, y: 303.5 })
         .build();
-    world
-        .create_entity()
-        .with(Agent::new())
-        .with(Position { x: 100.0, y: 200.0 })
-        .with(Velocity {
-            heading: 1.0 / 4.0 * PI,
-            magnitude: 30.0,
-        })
-        .build();
+
+    let x_range = Uniform::from(0.0..window_width as f32);
+    let y_range = Uniform::from(0.0..window_height as f32);
+    let heading_range = Uniform::from(0.0..(2.0 * PI));
+    let magnitude_range = Uniform::from(5.0..50.0);
+    let mut rng = thread_rng();
+
+    for _ in 0..num_targets {
+        world
+            .create_entity()
+            .with(Target)
+            .with(Position {
+                x: x_range.sample(&mut rng),
+                y: y_range.sample(&mut rng),
+            })
+            .build();
+    }
+
+    for _ in 0..num_agents {
+        world
+            .create_entity()
+            .with(Agent::new())
+            .with(Position {
+                x: x_range.sample(&mut rng),
+                y: y_range.sample(&mut rng),
+            })
+            .with(Velocity {
+                heading: heading_range.sample(&mut rng),
+                magnitude: magnitude_range.sample(&mut rng),
+            })
+            .build();
+    }
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(ApplyVelocity, "apply_velocity", &[])
@@ -202,9 +217,9 @@ fn main() {
                     heading += PI;
                     let x3 = (p.x + heading.cos() * 4.0).round() as i16;
                     let y3 = (p.y + heading.sin() * 4.0).round() as i16;
-                    canvas.aa_trigon(x1, y1, x2, y2, x3, y3, canvas.draw_color())
+                    canvas.trigon(x1, y1, x2, y2, x3, y3, canvas.draw_color())
                 } else {
-                    canvas.aa_circle(
+                    canvas.circle(
                         p.x.round() as i16,
                         p.y.round() as i16,
                         3,
