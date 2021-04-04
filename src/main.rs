@@ -1,137 +1,26 @@
+mod components;
+mod resources;
+mod systems;
+
+use components::{Agent, Position, Target, Velocity};
 use rand::{
     distributions::{Distribution, Uniform},
-    thread_rng, Rng,
+    thread_rng,
 };
+use resources::{DeltaTime, HitTargets, MaxPos};
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use specs::{
-    prelude::*, Builder, Component, DispatcherBuilder, Entities, NullStorage, ReadExpect,
-    ReadStorage, System, VecStorage, World, WorldExt, WriteStorage,
-};
+use specs::{prelude::*, World, WorldExt};
 use std::collections::HashSet;
 use std::f32::consts::PI;
 use std::thread;
 use std::time::Duration;
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-struct Agent {
-    score: i32,
-}
-
-impl Agent {
-    pub fn new() -> Self {
-        Self { score: 0 }
-    }
-
-    pub fn inc(&mut self) {
-        self.score += 1;
-    }
-
-    pub fn score(&self) -> i32 {
-        self.score
-    }
-}
-
-impl Default for Agent {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Component, Debug, Default)]
-#[storage(NullStorage)]
-struct Target;
-
-#[derive(Clone, Component, Copy, Debug)]
-#[storage(VecStorage)]
-struct Position {
-    x: f32,
-    y: f32,
-}
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-struct Velocity {
-    heading: f32,
-    magnitude: f32,
-}
-
-struct DeltaTime(f32);
-
-struct MaxPos(Position);
-
-struct HitTargets(HashSet<specs::world::Index>);
-
-struct ApplyVelocity;
-
-impl<'a> System<'a> for ApplyVelocity {
-    type SystemData = (
-        ReadExpect<'a, DeltaTime>,
-        ReadExpect<'a, MaxPos>,
-        WriteStorage<'a, Position>,
-        ReadStorage<'a, Velocity>,
-    );
-
-    fn run(&mut self, (delta, max, mut position, velocity): Self::SystemData) {
-        let delta = delta.0;
-        let max = max.0;
-        for (pos, vel) in (&mut position, &velocity).join() {
-            pos.x = (pos.x + vel.heading.cos() * vel.magnitude * delta).rem_euclid(max.x);
-            pos.y = (pos.y + vel.heading.sin() * vel.magnitude * delta).rem_euclid(max.y);
-        }
-    }
-}
-
-struct CollisionCheck;
-
-impl<'a> System<'a> for CollisionCheck {
-    type SystemData = (
-        ReadStorage<'a, Position>,
-        WriteStorage<'a, Agent>,
-        ReadStorage<'a, Target>,
-        WriteExpect<'a, HitTargets>,
-        Entities<'a>,
-    );
-
-    fn run(&mut self, (position, mut agent, target, mut hit_targets, entities): Self::SystemData) {
-        let hit_targets = &mut (hit_targets.0);
-        for (pos, agent) in (&position, &mut agent).join() {
-            for (target, _, e) in (&position, &target, &entities).join() {
-                if (pos.x - target.x).abs() < 5.0 && (pos.y - target.y).abs() < 5.0 {
-                    // It's possible for multiple agents to hit the same target in a single tick here
-                    // I'm okay with this because it seems "confusing" for an agent to follow behavior that normally results in a hit and it suddenly get nothing
-                    hit_targets.insert(e.id());
-                    agent.inc();
-                    println!("Score: {}", agent.score());
-                }
-            }
-        }
-    }
-}
-
-struct SpawnNewTargets;
-
-impl<'a> System<'a> for SpawnNewTargets {
-    type SystemData = (
-        WriteStorage<'a, Position>,
-        WriteExpect<'a, HitTargets>,
-        ReadExpect<'a, MaxPos>,
-        Entities<'a>,
-    );
-
-    fn run(&mut self, (mut position, mut hit_targets, max, entities): Self::SystemData) {
-        let max = max.0;
-        hit_targets.0.drain().for_each(|id| {
-            let t = entities.entity(id);
-            let pos = position.get_mut(t).expect("Unable to find old target");
-            pos.x = thread_rng().gen_range(0.0..max.x);
-            pos.y = thread_rng().gen_range(0.0..max.y);
-        });
-    }
-}
+use systems::{
+    apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
+    spawn_new_targets::SpawnNewTargets,
+};
 
 fn main() {
     let sdl_context = sdl2::init().unwrap();
