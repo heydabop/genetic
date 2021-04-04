@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 specs = { version = "0.16.1", features = ["specs-derive"] }
+sdl2 = "0.34.4"
