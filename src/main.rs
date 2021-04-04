@@ -58,22 +58,6 @@ fn main() {
     world.register::<Position>();
     world.register::<Velocity>();
 
-    world
-        .create_entity()
-        .with(Target)
-        .with(Position { x: 150.0, y: 250.0 })
-        .build();
-    world
-        .create_entity()
-        .with(Target)
-        .with(Position { x: 178.0, y: 273.0 })
-        .build();
-    world
-        .create_entity()
-        .with(Target)
-        .with(Position { x: 198.0, y: 303.5 })
-        .build();
-
     let x_range = Uniform::from(0.0..window_width as f32);
     let y_range = Uniform::from(0.0..window_height as f32);
     let heading_range = Uniform::from(0.0..(2.0 * PI));
