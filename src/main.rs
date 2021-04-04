@@ -3,12 +3,20 @@ use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use specs::{
-    prelude::*, Builder, Component, DispatcherBuilder, Entities, ReadExpect, ReadStorage, System,
-    VecStorage, World, WorldExt, WriteStorage,
+    prelude::*, Builder, Component, DispatcherBuilder, Entities, NullStorage, ReadExpect,
+    ReadStorage, System, VecStorage, World, WorldExt, WriteStorage,
 };
 use std::f32::consts::PI;
 use std::thread;
 use std::time::Duration;
+
+#[derive(Component, Debug, Default)]
+#[storage(NullStorage)]
+struct Agent;
+
+#[derive(Component, Debug, Default)]
+#[storage(NullStorage)]
+struct Target;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -69,6 +77,29 @@ impl<'a> System<'a> for DecayVelocity {
     }
 }
 
+struct CollisionCheck;
+
+impl<'a> System<'a> for CollisionCheck {
+    type SystemData = (
+        ReadStorage<'a, Position>,
+        ReadStorage<'a, Agent>,
+        ReadStorage<'a, Target>,
+        Entities<'a>,
+    );
+
+    fn run(&mut self, (position, agent, target, entities): Self::SystemData) {
+        for (agent, _) in (&position, &agent).join() {
+            for (target, _, e) in (&position, &target, &entities).join() {
+                if (agent.x - target.x).abs() < 5.0 && (agent.y - target.y).abs() < 5.0 {
+                    entities
+                        .delete(e)
+                        .expect("Unable to delete target on collision");
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -90,15 +121,29 @@ fn main() {
 
     let mut world = World::new();
     world.insert(DeltaTime(1.0 / 60.0));
+    world.register::<Agent>();
+    world.register::<Target>();
     world.register::<Position>();
     world.register::<Velocity>();
 
     world
         .create_entity()
-        .with(Position { x: 1.0, y: 2.0 })
+        .with(Target)
+        .with(Position { x: 150.0, y: 250.0 })
         .build();
     world
         .create_entity()
+        .with(Target)
+        .with(Position { x: 178.0, y: 273.0 })
+        .build();
+    world
+        .create_entity()
+        .with(Target)
+        .with(Position { x: 198.0, y: 303.5 })
+        .build();
+    world
+        .create_entity()
+        .with(Agent)
         .with(Position { x: 100.0, y: 200.0 })
         .with(Velocity {
             heading: 1.0 / 4.0 * PI,
@@ -107,9 +152,8 @@ fn main() {
         .build();
 
     let mut dispatcher = DispatcherBuilder::new()
-        //.with(PrintWorld, "print_world", &[])
         .with(ApplyVelocity, "apply_velocity", &[])
-        //.with(PrintWorld, "print_world_updated", &["apply_velocity"])
+        .with(CollisionCheck, "collision_check", &["apply_velocity"])
         .build();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
