@@ -1,4 +1,5 @@
 mod components;
+mod neural;
 mod resources;
 mod systems;
 
