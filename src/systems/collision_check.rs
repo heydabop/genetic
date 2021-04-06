@@ -1,4 +1,4 @@
-use crate::components::{Agent, Position, Target};
+use crate::components::{Position, Score, Target};
 use crate::resources::HitTargets;
 use specs::{prelude::*, ReadStorage, System, WriteStorage};
 
@@ -7,7 +7,7 @@ pub struct CollisionCheck;
 impl<'a> System<'a> for CollisionCheck {
     type SystemData = (
         ReadStorage<'a, Position>,
-        WriteStorage<'a, Agent>,
+        WriteStorage<'a, Score>,
         ReadStorage<'a, Target>,
         WriteExpect<'a, HitTargets>,
         Entities<'a>,

@@ -97,8 +97,10 @@ impl Network {
         Self { layers }
     }
 
-    pub fn propagate(&self, inputs: Vec<f32>) -> Vec<f32> {
+    pub fn propagate(&self, inputs: &[f32]) -> Vec<f32> {
         assert_eq!(inputs.len(), self.layers[0].neurons[0].input_weights.len());
+
+        let inputs = inputs.to_vec();
 
         // Input the output of each layer into the next layer
         self.layers

@@ -3,7 +3,8 @@ mod neural;
 mod resources;
 mod systems;
 
-use components::{Agent, Position, Target, Velocity};
+use components::{Agent, Position, Score, Target, Velocity};
+use neural::Network;
 use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
@@ -19,8 +20,8 @@ use std::f32::consts::PI;
 use std::thread;
 use std::time::Duration;
 use systems::{
-    apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
-    spawn_new_targets::SpawnNewTargets,
+    apply_velocity::ApplyVelocity, collision_check::CollisionCheck, control::Control,
+    spawn_new_targets::SpawnNewTargets, vision::Vision,
 };
 
 fn main() {
@@ -30,7 +31,7 @@ fn main() {
     let window_width = 800;
     let window_height = 600;
     let num_targets = 10;
-    let num_agents = 15;
+    let num_agents = 1;
 
     let window = video_subsystem
         .window("genetic", window_width, window_height)
@@ -55,6 +56,7 @@ fn main() {
     }));
     world.insert(HitTargets(HashSet::<specs::world::Index>::new()));
     world.register::<Agent>();
+    world.register::<Score>();
     world.register::<Target>();
     world.register::<Position>();
     world.register::<Velocity>();
@@ -79,7 +81,11 @@ fn main() {
     for _ in 0..num_agents {
         world
             .create_entity()
-            .with(Agent::new())
+            .with(Agent {
+                inputs: None,
+                network: Network::random(&mut rng, &[5, 9, 2]),
+            })
+            .with(Score::new())
             .with(Position {
                 x: x_range.sample(&mut rng),
                 y: y_range.sample(&mut rng),
@@ -92,7 +98,9 @@ fn main() {
     }
 
     let mut dispatcher = DispatcherBuilder::new()
-        .with(ApplyVelocity, "apply_velocity", &[])
+        .with(Vision, "vision", &[])
+        .with(Control, "control", &["vision"])
+        .with(ApplyVelocity, "apply_velocity", &["control"])
         .with(CollisionCheck, "collision_check", &["apply_velocity"])
         .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
         .build();

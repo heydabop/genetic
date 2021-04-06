@@ -1,12 +1,22 @@
+use crate::neural::Network;
 use specs::{Component, NullStorage, VecStorage};
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Agent {
+    // This network should have an odd number of neurons in its first layer
+    // so the agent can have a receptor centered in the direction its heading
+    pub inputs: Option<Vec<f32>>,
+    pub network: Network,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Score {
     score: i32,
 }
 
-impl Agent {
+impl Score {
     pub fn new() -> Self {
         Self { score: 0 }
     }
@@ -20,7 +30,7 @@ impl Agent {
     }
 }
 
-impl Default for Agent {
+impl Default for Score {
     fn default() -> Self {
         Self::new()
     }
@@ -35,6 +45,12 @@ pub struct Target;
 pub struct Position {
     pub x: f32,
     pub y: f32,
+}
+
+impl Position {
+    pub fn distance(&self, b: &Position) -> f32 {
+        ((b.x - self.x).powi(2) + (b.y - self.y).powi(2)).sqrt()
+    }
 }
 
 #[derive(Component, Debug)]
