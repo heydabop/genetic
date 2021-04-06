@@ -9,7 +9,7 @@ use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
 };
-use resources::{DeltaTime, HitTargets, MaxPos};
+use resources::{DeltaTime, HitTargets, MaxPos, Ticks};
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -19,7 +19,8 @@ use std::collections::HashSet;
 use std::f32::consts::PI;
 use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
-    control::Control, spawn_new_targets::SpawnNewTargets, vision::Vision,
+    control::Control, print_stats::PrintStats, spawn_new_targets::SpawnNewTargets,
+    tick_counter::TickCounter, vision::Vision,
 };
 
 fn main() {
@@ -54,6 +55,7 @@ fn main() {
         y: window_height as f32,
     }));
     world.insert(HitTargets(HashSet::<specs::world::Index>::new()));
+    world.insert(Ticks::default());
     world.register::<Agent>();
     world.register::<Score>();
     world.register::<Target>();
@@ -99,11 +101,13 @@ fn main() {
     }
 
     let mut dispatcher = DispatcherBuilder::new()
+        .with(TickCounter, "tick_counter", &[])
         .with(Vision, "vision", &[])
         .with(Control, "control", &["vision"])
         .with(ApplyForce, "apply_force", &["control"])
         .with(ApplyVelocity, "apply_velocity", &["apply_force"])
         .with(CollisionCheck, "collision_check", &["apply_velocity"])
+        .with(PrintStats, "print_stats", &["collision_check"])
         .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
         .build();
 

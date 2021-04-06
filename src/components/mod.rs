@@ -13,7 +13,7 @@ pub struct Agent {
 #[derive(Component, Debug, Default)]
 #[storage(VecStorage)]
 pub struct Score {
-    score: i32,
+    score: u32,
 }
 
 impl Score {
@@ -25,7 +25,7 @@ impl Score {
         self.score += 1;
     }
 
-    pub fn score(&self) -> i32 {
+    pub fn score(&self) -> u32 {
         self.score
     }
 }

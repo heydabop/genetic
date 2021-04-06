@@ -25,7 +25,6 @@ impl<'a> System<'a> for CollisionCheck {
                         // I'm okay with this because it seems "confusing" for an agent to follow behavior that normally results in a hit and it suddenly get nothing
                         hit_targets.insert(e.id());
                         agent.inc();
-                        println!("Score: {}", agent.score());
                     }
                 }
             }
