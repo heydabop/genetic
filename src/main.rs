@@ -17,8 +17,6 @@ use sdl2::pixels::Color;
 use specs::{prelude::*, World, WorldExt};
 use std::collections::HashSet;
 use std::f32::consts::PI;
-use std::thread;
-use std::time::Duration;
 use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
     control::Control, spawn_new_targets::SpawnNewTargets, vision::Vision,
@@ -30,6 +28,7 @@ fn main() {
 
     let window_width = 1200;
     let window_height = 1200;
+    let framerate = 60;
     let num_targets = 40;
     let num_agents = 20;
 
@@ -41,15 +40,15 @@ fn main() {
 
     let mut canvas = window.into_canvas().build().unwrap();
 
-    let black = Color::RGB(0, 0, 0);
-    let white = Color::RGB(255, 255, 255);
+    let black = Color::RGBA(30, 30, 30, 255);
+    let white = Color::RGBA(225, 225, 225, 255);
 
     canvas.set_draw_color(black);
     canvas.clear();
     canvas.present();
 
     let mut world = World::new();
-    world.insert(DeltaTime(1.0 / 60.0));
+    world.insert(DeltaTime(1.0 / framerate as f32));
     world.insert(MaxPos(Position {
         x: window_width as f32,
         y: window_height as f32,
@@ -109,6 +108,10 @@ fn main() {
         .build();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
+    let mut fps_manager = sdl2::gfx::framerate::FPSManager::new();
+    fps_manager
+        .set_framerate(60)
+        .expect("Unable to set framerate");
     'running: loop {
         canvas.set_draw_color(black);
         canvas.clear();
@@ -121,19 +124,22 @@ fn main() {
                 if let Some(v) = v {
                     let mut point_dir = v.heading;
                     let (sin, cos) = point_dir.sin_cos();
-                    let x1 = cos.mul_add(8.0, p.x).round() as i16;
-                    let y1 = sin.mul_add(8.0, p.y).round() as i16;
-                    point_dir -= 1.0 / 2.0 * PI;
+                    let x1 = cos.mul_add(6.0, p.x).round() as i16;
+                    let y1 = sin.mul_add(6.0, p.y).round() as i16;
+                    point_dir += 2.0 / 3.0 * PI;
                     let (sin, cos) = point_dir.sin_cos();
-                    let x2 = cos.mul_add(4.0, p.x).round() as i16;
-                    let y2 = sin.mul_add(4.0, p.y).round() as i16;
-                    point_dir += PI;
+                    let x2 = cos.mul_add(5.0, p.x).round() as i16;
+                    let y2 = sin.mul_add(5.0, p.y).round() as i16;
+                    point_dir += 1.0 / 3.0 * PI;
+                    let x3 = cos.mul_add(1.0, p.x).round() as i16;
+                    let y3 = sin.mul_add(1.0, p.y).round() as i16;
+                    point_dir += 1.0 / 3.0 * PI;
                     let (sin, cos) = point_dir.sin_cos();
-                    let x3 = cos.mul_add(4.0, p.x).round() as i16;
-                    let y3 = sin.mul_add(4.0, p.y).round() as i16;
-                    canvas.trigon(x1, y1, x2, y2, x3, y3, canvas.draw_color())
+                    let x4 = cos.mul_add(5.0, p.x).round() as i16;
+                    let y4 = sin.mul_add(5.0, p.y).round() as i16;
+                    canvas.polygon(&[x1, x2, x3, x4], &[y1, y2, y3, y4], canvas.draw_color())
                 } else {
-                    canvas.circle(
+                    canvas.filled_circle(
                         p.x.round() as i16,
                         p.y.round() as i16,
                         4,
@@ -159,8 +165,6 @@ fn main() {
 
         dispatcher.dispatch(&world);
         world.maintain();
-        thread::sleep(Duration::from_secs_f32(
-            world.read_resource::<DeltaTime>().0,
-        ));
+        fps_manager.delay();
     }
 }
