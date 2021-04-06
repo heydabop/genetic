@@ -122,7 +122,7 @@ fn main() {
                     canvas.circle(
                         p.x.round() as i16,
                         p.y.round() as i16,
-                        3,
+                        4,
                         canvas.draw_color(),
                     )
                 }
