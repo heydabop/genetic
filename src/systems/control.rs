@@ -12,7 +12,7 @@ impl<'a> System<'a> for Control {
                 let outputs = agent.network.propagate(inputs);
                 if outputs.len() == 2 {
                     // if neuron had no output, do nothing
-                    // otherwise, clamp output to (0, 1] and transform to (10, 10]
+                    // otherwise, clamp output to (0, 1] and transform to (-10, 10]
                     force.rotation = if outputs[0] > f32::EPSILON {
                         (outputs[0].min(1.0) - 0.5) * 20.0
                     } else {

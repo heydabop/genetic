@@ -29,7 +29,7 @@ fn main() {
 
     let window_width = 1200;
     let window_height = 1200;
-    let framerate = 60;
+    let framerate = 120;
     let num_targets = 40;
     let num_agents = 20;
 
@@ -114,7 +114,7 @@ fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut fps_manager = sdl2::gfx::framerate::FPSManager::new();
     fps_manager
-        .set_framerate(60)
+        .set_framerate(framerate)
         .expect("Unable to set framerate");
     'running: loop {
         canvas.set_draw_color(black);
