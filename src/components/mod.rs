@@ -10,7 +10,7 @@ pub struct Agent {
     pub network: Network,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 #[storage(VecStorage)]
 pub struct Score {
     score: i32,
@@ -30,10 +30,11 @@ impl Score {
     }
 }
 
-impl Default for Score {
-    fn default() -> Self {
-        Self::new()
-    }
+#[derive(Component, Debug, Default)]
+#[storage(VecStorage)]
+pub struct Force {
+    pub rotation: f32,
+    pub translation: f32,
 }
 
 #[derive(Component, Debug, Default)]

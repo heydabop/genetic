@@ -3,7 +3,7 @@ mod neural;
 mod resources;
 mod systems;
 
-use components::{Agent, Position, Score, Target, Velocity};
+use components::{Agent, Force, Position, Score, Target, Velocity};
 use neural::Network;
 use rand::{
     distributions::{Distribution, Uniform},
@@ -20,18 +20,18 @@ use std::f32::consts::PI;
 use std::thread;
 use std::time::Duration;
 use systems::{
-    apply_velocity::ApplyVelocity, collision_check::CollisionCheck, control::Control,
-    spawn_new_targets::SpawnNewTargets, vision::Vision,
+    apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
+    control::Control, spawn_new_targets::SpawnNewTargets, vision::Vision,
 };
 
 fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window_width = 800;
-    let window_height = 600;
-    let num_targets = 10;
-    let num_agents = 1;
+    let window_width = 1200;
+    let window_height = 1200;
+    let num_targets = 40;
+    let num_agents = 20;
 
     let window = video_subsystem
         .window("genetic", window_width, window_height)
@@ -60,6 +60,7 @@ fn main() {
     world.register::<Target>();
     world.register::<Position>();
     world.register::<Velocity>();
+    world.register::<Force>();
 
     let x_range = Uniform::from(0.0..window_width as f32);
     let y_range = Uniform::from(0.0..window_height as f32);
@@ -83,7 +84,7 @@ fn main() {
             .create_entity()
             .with(Agent {
                 inputs: None,
-                network: Network::random(&mut rng, &[5, 9, 2]),
+                network: Network::random(&mut rng, &[9, 15, 2]),
             })
             .with(Score::new())
             .with(Position {
@@ -94,13 +95,15 @@ fn main() {
                 heading: heading_range.sample(&mut rng),
                 magnitude: magnitude_range.sample(&mut rng),
             })
+            .with(Force::default())
             .build();
     }
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(Vision, "vision", &[])
         .with(Control, "control", &["vision"])
-        .with(ApplyVelocity, "apply_velocity", &["control"])
+        .with(ApplyForce, "apply_force", &["control"])
+        .with(ApplyVelocity, "apply_velocity", &["apply_force"])
         .with(CollisionCheck, "collision_check", &["apply_velocity"])
         .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
         .build();

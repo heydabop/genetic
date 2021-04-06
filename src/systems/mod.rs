@@ -1,3 +1,4 @@
+pub mod apply_force;
 pub mod apply_velocity;
 pub mod collision_check;
 pub mod control;
