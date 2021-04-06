@@ -105,6 +105,14 @@ impl Network {
             .iter()
             .fold(inputs, |inputs, layer| layer.propagate(&inputs))
     }
+
+    pub fn input_size(&self) -> usize {
+        self.layers[0].neurons[0].input_weights.len()
+    }
+
+    pub fn output_size(&self) -> usize {
+        self.layers.last().unwrap().neurons.len()
+    }
 }
 
 #[cfg(test)]

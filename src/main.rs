@@ -108,15 +108,18 @@ fn main() {
             let velocity = world.read_storage::<Velocity>();
             for (p, v) in (&position, (&velocity).maybe()).join() {
                 if let Some(v) = v {
-                    let mut heading = v.heading;
-                    let x1 = (p.x + heading.cos() * 8.0).round() as i16;
-                    let y1 = (p.y + heading.sin() * 8.0).round() as i16;
-                    heading -= 1.0 / 2.0 * PI;
-                    let x2 = (p.x + heading.cos() * 4.0).round() as i16;
-                    let y2 = (p.y + heading.sin() * 4.0).round() as i16;
-                    heading += PI;
-                    let x3 = (p.x + heading.cos() * 4.0).round() as i16;
-                    let y3 = (p.y + heading.sin() * 4.0).round() as i16;
+                    let mut point_dir = v.heading;
+                    let (sin, cos) = point_dir.sin_cos();
+                    let x1 = cos.mul_add(8.0, p.x).round() as i16;
+                    let y1 = sin.mul_add(8.0, p.y).round() as i16;
+                    point_dir -= 1.0 / 2.0 * PI;
+                    let (sin, cos) = point_dir.sin_cos();
+                    let x2 = cos.mul_add(4.0, p.x).round() as i16;
+                    let y2 = sin.mul_add(4.0, p.y).round() as i16;
+                    point_dir += PI;
+                    let (sin, cos) = point_dir.sin_cos();
+                    let x3 = cos.mul_add(4.0, p.x).round() as i16;
+                    let y3 = sin.mul_add(4.0, p.y).round() as i16;
                     canvas.trigon(x1, y1, x2, y2, x3, y3, canvas.draw_color())
                 } else {
                     canvas.circle(

@@ -16,8 +16,9 @@ impl<'a> System<'a> for ApplyVelocity {
         let delta = delta.0;
         let max = max.0;
         for (pos, vel) in (&mut position, &velocity).join() {
-            pos.x = (pos.x + vel.heading.cos() * vel.magnitude * delta).rem_euclid(max.x);
-            pos.y = (pos.y + vel.heading.sin() * vel.magnitude * delta).rem_euclid(max.y);
+            let (sin, cos) = vel.heading.sin_cos();
+            pos.x = (cos.mul_add(vel.magnitude * delta, pos.x)).rem_euclid(max.x);
+            pos.y = (sin.mul_add(vel.magnitude * delta, pos.y)).rem_euclid(max.y);
         }
     }
 }
