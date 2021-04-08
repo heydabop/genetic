@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 rand = "0.8.3"
+rand_pcg = "0.3.0"
 specs = { version = "0.16.1", features = ["specs-derive"] }
 sdl2 = {version = "0.34.4", features = ["gfx"] }

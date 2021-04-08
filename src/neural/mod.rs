@@ -4,6 +4,7 @@ use rand::{
     distributions::{Distribution, Uniform},
     Rng,
 };
+use std::f32::EPSILON;
 use std::iter::Iterator;
 
 // A neural network where each neuron is stored as its bias and input weights
@@ -51,6 +52,17 @@ impl Neuron {
                 .map(|(&a, &b)| if rng.gen::<bool>() { a } else { b })
                 .collect(),
         }
+    }
+}
+
+impl PartialEq for Neuron {
+    fn eq(&self, other: &Self) -> bool {
+        (other.bias - self.bias).abs() < EPSILON
+            && self
+                .input_weights
+                .iter()
+                .zip(&other.input_weights)
+                .all(|(a, b)| (b - a).abs() < EPSILON)
     }
 }
 
@@ -159,17 +171,18 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand_pcg::Pcg64Mcg;
 
     #[test]
     fn neuron_propagate() {
         let neuron = Neuron::new(0.1, vec![0.3, 0.4, 0.6]);
-        assert!((neuron.propagate(&[-0.1, 0.7, 0.3]) - 0.53).abs() < f32::EPSILON);
+        assert!((neuron.propagate(&[-0.1, 0.7, 0.3]) - 0.53).abs() < EPSILON);
     }
 
     #[test]
     fn neuron_propagate_zero() {
         let neuron = Neuron::new(-0.06, vec![0.6, 0.4, 0.5]);
-        assert!(neuron.propagate(&[-0.5, 0.3, 0.45]).abs() < f32::EPSILON);
+        assert!(neuron.propagate(&[-0.5, 0.3, 0.45]).abs() < EPSILON);
     }
 
     #[test]
@@ -182,9 +195,9 @@ mod tests {
         let layer = Layer::new(neurons);
         let outputs = layer.propagate(&[0.7, 0.1]);
 
-        assert!((outputs[0] - 0.94).abs() < f32::EPSILON);
-        assert!((outputs[1] - 0.99).abs() < f32::EPSILON);
-        assert!((outputs[2] - 0.12).abs() < f32::EPSILON);
+        assert!((outputs[0] - 0.94).abs() < EPSILON);
+        assert!((outputs[1] - 0.99).abs() < EPSILON);
+        assert!((outputs[2] - 0.12).abs() < EPSILON);
     }
 
     #[test]
@@ -198,6 +211,23 @@ mod tests {
             Layer::new(vec![Neuron::new(0.5, vec![0.3, 0.4, 0.5])]),
         ]);
 
-        assert!((network.propagate(&[0.7, 0.1])[0] - 1.238).abs() < f32::EPSILON);
+        assert!((network.propagate(&[0.7, 0.1])[0] - 1.238).abs() < EPSILON);
+    }
+
+    #[test]
+    fn neuron_crossover() {
+        let mut rng = Pcg64Mcg::new(0xcafef00dd15ea5e5);
+
+        let a = Neuron::new(0.1, (0..10).map(|i| i as f32).collect());
+        let b = Neuron::new(-0.1, (0..10).map(|i| (i * 20 + 1) as f32).collect());
+
+        let c = (&a).uniform_crossover(&mut rng, &b);
+        assert_eq!(
+            c,
+            Neuron {
+                bias: 0.1,
+                input_weights: vec![0.0, 1.0, 41.0, 3.0, 81.0, 5.0, 6.0, 7.0, 161.0, 181.0]
+            }
+        );
     }
 }
