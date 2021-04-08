@@ -32,9 +32,9 @@ fn main() {
     let window_width = 1200;
     let window_height = 1200;
     let tickrate = 120;
-    let framerate_ratio = 2; // ratio of framerate to tickrate, render FPS will be tickrate/framerate_ratio
-    let num_targets = 40;
-    let num_agents = 25;
+    let framerate_ratio = 1; // ratio of framerate to tickrate, render FPS will be tickrate/framerate_ratio
+    let num_targets = 50;
+    let num_agents = 30;
     let population_lifetime_seconds = 60;
 
     let window = video_subsystem
@@ -123,6 +123,7 @@ fn main() {
         .with(Mutate, "mutate", &["crossover"])
         .build();
 
+    let mut skip = false;
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut fps_manager = sdl2::gfx::framerate::FPSManager::new();
     fps_manager
@@ -133,7 +134,13 @@ fn main() {
         canvas.clear();
         canvas.set_draw_color(white);
 
-        if world.read_resource::<Ticks>().get() % framerate_ratio == 0 {
+        let ticks = world.read_resource::<Ticks>().get();
+
+        if skip && ticks % world.read_resource::<ResetInterval>().0 == 0 {
+            skip = false;
+        }
+
+        if !skip && (framerate_ratio == 1 || ticks % framerate_ratio == 0) {
             let position = world.read_storage::<Position>();
             let velocity = world.read_storage::<Velocity>();
             for (p, v) in (&position, (&velocity).maybe()).join() {
@@ -166,6 +173,8 @@ fn main() {
             }
 
             canvas.present();
+
+            skip = false;
         }
 
         for event in event_pump.poll_iter() {
@@ -175,12 +184,19 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(Keycode::G),
+                    ..
+                } => skip = true,
                 _ => {}
             }
         }
 
         dispatcher.dispatch(&world);
         world.maintain();
-        fps_manager.delay();
+
+        if !skip {
+            fps_manager.delay();
+        }
     }
 }
