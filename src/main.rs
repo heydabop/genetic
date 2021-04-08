@@ -31,10 +31,11 @@ fn main() {
 
     let window_width = 1200;
     let window_height = 1200;
-    let framerate = 120;
-    let num_targets = 55;
-    let num_agents = 30;
-    let population_lifetime_seconds = 40;
+    let tickrate = 120;
+    let framerate_ratio = 2; // ratio of framerate to tickrate, render FPS will be tickrate/framerate_ratio
+    let num_targets = 40;
+    let num_agents = 25;
+    let population_lifetime_seconds = 60;
 
     let window = video_subsystem
         .window("genetic", window_width, window_height)
@@ -52,16 +53,14 @@ fn main() {
     canvas.present();
 
     let mut world = World::new();
-    world.insert(DeltaTime(1.0 / framerate as f32));
+    world.insert(DeltaTime(1.0 / tickrate as f32));
     world.insert(MaxPos(Position {
         x: window_width as f32,
         y: window_height as f32,
     }));
     world.insert(HitTargets(HashSet::<specs::world::Index>::new()));
     world.insert(Ticks::default());
-    world.insert(ResetInterval(
-        framerate as u64 * population_lifetime_seconds,
-    ));
+    world.insert(ResetInterval(tickrate as u64 * population_lifetime_seconds));
     world.register::<Agent>();
     world.register::<Score>();
     world.register::<Fitness>();
@@ -127,14 +126,14 @@ fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut fps_manager = sdl2::gfx::framerate::FPSManager::new();
     fps_manager
-        .set_framerate(framerate)
+        .set_framerate(tickrate)
         .expect("Unable to set framerate");
     'running: loop {
         canvas.set_draw_color(black);
         canvas.clear();
         canvas.set_draw_color(white);
 
-        {
+        if world.read_resource::<Ticks>().get() % framerate_ratio == 0 {
             let position = world.read_storage::<Position>();
             let velocity = world.read_storage::<Velocity>();
             for (p, v) in (&position, (&velocity).maybe()).join() {
@@ -165,9 +164,9 @@ fn main() {
                 }
                 .expect("Error drawing to buffer");
             }
-        };
 
-        canvas.present();
+            canvas.present();
+        }
 
         for event in event_pump.poll_iter() {
             match event {
