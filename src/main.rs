@@ -9,7 +9,7 @@ use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
 };
-use resources::{DeltaTime, HitTargets, MaxPos, Ticks};
+use resources::{DeltaTime, HitTargets, MaxPos, ResetInterval, Ticks};
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -20,8 +20,8 @@ use std::f32::consts::PI;
 use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
     control::Control, crossover::Crossover, print_stats::PrintStats, rank_selection::RankSelection,
-    reset_scores::ResetScores, spawn_new_targets::SpawnNewTargets, tick_counter::TickCounter,
-    vision::Vision,
+    reset_positions::ResetPositions, reset_scores::ResetScores, reset_velocities::ResetVelocities,
+    spawn_new_targets::SpawnNewTargets, tick_counter::TickCounter, vision::Vision,
 };
 
 fn main() {
@@ -57,6 +57,7 @@ fn main() {
     }));
     world.insert(HitTargets(HashSet::<specs::world::Index>::new()));
     world.insert(Ticks::default());
+    world.insert(ResetInterval(framerate as u64 * 40));
     world.register::<Agent>();
     world.register::<Score>();
     world.register::<Rank>();
@@ -68,7 +69,7 @@ fn main() {
     let x_range = Uniform::from(0.0..window_width as f32);
     let y_range = Uniform::from(0.0..window_height as f32);
     let heading_range = Uniform::from(0.0..(2.0 * PI));
-    let magnitude_range = Uniform::from(5.0..50.0);
+    let magnitude_range = Uniform::from(5.0..100.0);
     let mut rng = thread_rng();
 
     for _ in 0..num_targets {
@@ -110,8 +111,10 @@ fn main() {
         .with(ApplyVelocity, "apply_velocity", &["apply_force"])
         .with(CollisionCheck, "collision_check", &["apply_velocity"])
         .with(PrintStats, "print_stats", &["collision_check"])
-        .with(RankSelection, "rank_selection", &["collision_check"])
         .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
+        .with(ResetVelocities, "reset_velocities", &["collision_check"])
+        .with(RankSelection, "rank_selection", &["collision_check"])
+        .with(ResetPositions, "reset_positions", &["spawn_new_targets"])
         .with(ResetScores, "reset_scores", &["rank_selection"])
         .with(Crossover, "crossover", &["rank_selection"])
         .build();

@@ -1,5 +1,5 @@
 use crate::components::{Rank, Score};
-use crate::resources::Ticks;
+use crate::resources::{ResetInterval, Ticks};
 use specs::{prelude::*, ReadExpect, ReadStorage, System, WriteStorage};
 
 pub struct RankSelection;
@@ -10,10 +10,12 @@ impl<'a> System<'a> for RankSelection {
         ReadStorage<'a, Score>,
         WriteStorage<'a, Rank>,
         ReadExpect<'a, Ticks>,
+        ReadExpect<'a, ResetInterval>,
     );
 
-    fn run(&mut self, (entities, scores, mut ranks, ticks): Self::SystemData) {
-        if ticks.get() % 7200 != 0 {
+    fn run(&mut self, (entities, scores, mut ranks, ticks, interval): Self::SystemData) {
+        let interval = interval.0;
+        if ticks.get() % interval != 0 {
             return;
         }
         // sort scores in ascending order and remove duplicates (so equal scores can tie and have equal ranks)

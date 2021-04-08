@@ -1,14 +1,19 @@
 use crate::components::Score;
-use crate::resources::Ticks;
+use crate::resources::{ResetInterval, Ticks};
 use specs::{prelude::*, ReadExpect, ReadStorage, System};
 
 pub struct PrintStats;
 
 impl<'a> System<'a> for PrintStats {
-    type SystemData = (ReadStorage<'a, Score>, ReadExpect<'a, Ticks>);
+    type SystemData = (
+        ReadStorage<'a, Score>,
+        ReadExpect<'a, Ticks>,
+        ReadExpect<'a, ResetInterval>,
+    );
 
-    fn run(&mut self, (scores, ticks): Self::SystemData) {
-        if ticks.get() % 7200 != 0 {
+    fn run(&mut self, (scores, ticks, interval): Self::SystemData) {
+        let interval = interval.0;
+        if ticks.get() % interval != 0 {
             return;
         }
         let mut total = 0;

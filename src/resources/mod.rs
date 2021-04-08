@@ -19,3 +19,6 @@ impl Ticks {
         self.0
     }
 }
+
+// How frequently (in ticks) to generate a new population and reset scores
+pub struct ResetInterval(pub u64);

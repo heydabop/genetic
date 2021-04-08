@@ -1,6 +1,6 @@
 use crate::components::{Agent, Rank};
 use crate::neural::Network;
-use crate::resources::Ticks;
+use crate::resources::{ResetInterval, Ticks};
 use rand::{seq::SliceRandom, thread_rng};
 use specs::{prelude::*, ReadExpect, System, WriteStorage};
 
@@ -16,10 +16,12 @@ impl<'a> System<'a> for Crossover {
         WriteStorage<'a, Agent>,
         WriteStorage<'a, Rank>,
         ReadExpect<'a, Ticks>,
+        ReadExpect<'a, ResetInterval>,
     );
 
-    fn run(&mut self, (mut agents, ranks, ticks): Self::SystemData) {
-        if ticks.get() % 7200 != 0 {
+    fn run(&mut self, (mut agents, ranks, ticks, interval): Self::SystemData) {
+        let interval = interval.0;
+        if ticks.get() % interval != 0 {
             return;
         }
 
