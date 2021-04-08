@@ -30,8 +30,12 @@ impl<'a> System<'a> for PrintStats {
         let avg = total as f32 / num as f32;
 
         println!(
-            "Avg: {} - Min: {} - Max: {} - Total: {}",
-            avg, min, max, total
+            "Gen {} = Avg: {:.2} - Min: {} - Max: {} - Total: {}",
+            ticks.get() / interval,
+            avg,
+            min,
+            max,
+            total
         );
     }
 }

@@ -19,9 +19,10 @@ use std::collections::HashSet;
 use std::f32::consts::PI;
 use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
-    control::Control, crossover::Crossover, print_stats::PrintStats, rank_selection::RankSelection,
-    reset_positions::ResetPositions, reset_scores::ResetScores, reset_velocities::ResetVelocities,
-    spawn_new_targets::SpawnNewTargets, tick_counter::TickCounter, vision::Vision,
+    control::Control, crossover::Crossover, mutate::Mutate, print_stats::PrintStats,
+    rank_selection::RankSelection, reset_positions::ResetPositions, reset_scores::ResetScores,
+    reset_velocities::ResetVelocities, spawn_new_targets::SpawnNewTargets,
+    tick_counter::TickCounter, vision::Vision,
 };
 
 fn main() {
@@ -31,8 +32,9 @@ fn main() {
     let window_width = 1200;
     let window_height = 1200;
     let framerate = 120;
-    let num_targets = 60;
-    let num_agents = 40;
+    let num_targets = 70;
+    let num_agents = 45;
+    let population_lifetime_seconds = 40;
 
     let window = video_subsystem
         .window("genetic", window_width, window_height)
@@ -57,7 +59,9 @@ fn main() {
     }));
     world.insert(HitTargets(HashSet::<specs::world::Index>::new()));
     world.insert(Ticks::default());
-    world.insert(ResetInterval(framerate as u64 * 40));
+    world.insert(ResetInterval(
+        framerate as u64 * population_lifetime_seconds,
+    ));
     world.register::<Agent>();
     world.register::<Score>();
     world.register::<Rank>();
@@ -69,7 +73,7 @@ fn main() {
     let x_range = Uniform::from(0.0..window_width as f32);
     let y_range = Uniform::from(0.0..window_height as f32);
     let heading_range = Uniform::from(0.0..(2.0 * PI));
-    let magnitude_range = Uniform::from(5.0..100.0);
+    let magnitude_range = Uniform::from(5.0..150.0);
     let mut rng = thread_rng();
 
     for _ in 0..num_targets {
@@ -117,6 +121,7 @@ fn main() {
         .with(ResetPositions, "reset_positions", &["spawn_new_targets"])
         .with(ResetScores, "reset_scores", &["rank_selection"])
         .with(Crossover, "crossover", &["rank_selection"])
+        .with(Mutate, "mutate", &["crossover"])
         .build();
 
     let mut event_pump = sdl_context.event_pump().unwrap();

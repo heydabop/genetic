@@ -45,7 +45,7 @@ impl<'a> System<'a> for Crossover {
                 .unwrap()
                 .network
                 .clone();
-            agent.network = network_a.uniform_crossover(&mut rng, network_b);
+            agent.network = network_a.crossover_uniform(&mut rng, network_b);
         }
     }
 }

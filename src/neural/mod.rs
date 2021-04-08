@@ -42,7 +42,7 @@ impl Neuron {
         (input + self.bias).max(0.0)
     }
 
-    fn uniform_crossover<R: Rng + ?Sized>(&self, rng: &mut R, b: &Self) -> Self {
+    fn crossover_uniform<R: Rng + ?Sized>(&self, rng: &mut R, b: &Self) -> Self {
         Self {
             bias: if rng.gen::<bool>() { self.bias } else { b.bias },
             input_weights: self
@@ -51,6 +51,22 @@ impl Neuron {
                 .zip(b.input_weights.iter())
                 .map(|(&a, &b)| if rng.gen::<bool>() { a } else { b })
                 .collect(),
+        }
+    }
+
+    fn mutate_uniform<R: Rng + ?Sized>(
+        &mut self,
+        mut rng: &mut R,
+        range: Uniform<f32>,
+        probability: f32,
+    ) {
+        if rng.gen::<f32>() < probability {
+            self.bias = range.sample(&mut rng)
+        }
+        for w in &mut self.input_weights {
+            if rng.gen::<f32>() < probability {
+                *w = range.sample(&mut rng)
+            }
         }
     }
 }
@@ -89,7 +105,7 @@ impl Layer {
         self.neurons.iter().map(|n| n.propagate(inputs)).collect()
     }
 
-    fn uniform_crossover<R: Rng + ?Sized>(&self, mut rng: &mut R, b: &Self) -> Self {
+    fn crossover_uniform<R: Rng + ?Sized>(&self, mut rng: &mut R, b: &Self) -> Self {
         assert_eq!(self.neurons.len(), b.neurons.len());
 
         Self {
@@ -97,8 +113,19 @@ impl Layer {
                 .neurons
                 .iter()
                 .zip(b.neurons.iter())
-                .map(|(a, b)| a.uniform_crossover(&mut rng, b))
+                .map(|(a, b)| a.crossover_uniform(&mut rng, b))
                 .collect(),
+        }
+    }
+
+    fn mutate_uniform<R: Rng + ?Sized>(
+        &mut self,
+        rng: &mut R,
+        range: Uniform<f32>,
+        probability: f32,
+    ) {
+        for n in &mut self.neurons {
+            n.mutate_uniform(rng, range, probability);
         }
     }
 }
@@ -155,15 +182,23 @@ impl Network {
         self.layers.last().unwrap().neurons.len()
     }
 
-    pub fn uniform_crossover<R: Rng + ?Sized>(&self, mut rng: &mut R, b: &Self) -> Self {
+    pub fn crossover_uniform<R: Rng + ?Sized>(&self, mut rng: &mut R, b: &Self) -> Self {
         assert_eq!(self.layers.len(), b.layers.len());
         Self {
             layers: self
                 .layers
                 .iter()
                 .zip(b.layers.iter())
-                .map(|(a, b)| a.uniform_crossover(&mut rng, b))
+                .map(|(a, b)| a.crossover_uniform(&mut rng, b))
                 .collect(),
+        }
+    }
+
+    pub fn mutate_uniform<R: Rng + ?Sized>(&mut self, rng: &mut R, probability: f32) {
+        let range = Uniform::from(-1.0..1.0);
+
+        for l in &mut self.layers {
+            l.mutate_uniform(rng, range, probability);
         }
     }
 }
@@ -215,18 +250,38 @@ mod tests {
     }
 
     #[test]
-    fn neuron_crossover() {
+    fn neuron_crossover_uniform() {
         let mut rng = Pcg64Mcg::new(0xcafef00dd15ea5e5);
 
         let a = Neuron::new(0.1, (0..10).map(|i| i as f32).collect());
         let b = Neuron::new(-0.1, (0..10).map(|i| (i * 20 + 1) as f32).collect());
 
-        let c = (&a).uniform_crossover(&mut rng, &b);
+        let c = (&a).crossover_uniform(&mut rng, &b);
         assert_eq!(
             c,
             Neuron {
                 bias: 0.1,
                 input_weights: vec![0.0, 1.0, 41.0, 3.0, 81.0, 5.0, 6.0, 7.0, 161.0, 181.0]
+            }
+        );
+    }
+
+    #[test]
+    fn neuron_mutate() {
+        let mut rng = Pcg64Mcg::new(0xcafef00dd15ea5e5);
+        let range = Uniform::from(-1.0..1.0);
+
+        let mut a = Neuron {
+            bias: 0.1,
+            input_weights: vec![0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        };
+
+        a.mutate_uniform(&mut rng, range, 0.2);
+        assert_eq!(
+            a,
+            Neuron {
+                bias: 0.1,
+                input_weights: vec![0.0, 0.1, 0.2, 0.3, 0.18795109, 0.5, 0.6, 0.7, 0.8, 0.882401]
             }
         );
     }

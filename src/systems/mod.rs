@@ -3,6 +3,7 @@ pub mod apply_velocity;
 pub mod collision_check;
 pub mod control;
 pub mod crossover;
+pub mod mutate;
 pub mod print_stats;
 pub mod rank_selection;
 pub mod reset_positions;
