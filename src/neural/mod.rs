@@ -161,6 +161,6 @@ mod tests {
             Layer::new(vec![Neuron::new(0.5, vec![0.3, 0.4, 0.5])]),
         ]);
 
-        assert!((network.propagate(vec![0.7, 0.1])[0] - 1.238).abs() < f32::EPSILON);
+        assert!((network.propagate(&[0.7, 0.1])[0] - 1.238).abs() < f32::EPSILON);
     }
 }
