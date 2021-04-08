@@ -21,7 +21,7 @@ impl<'a> System<'a> for Vision {
     );
 
     fn run(&mut self, (mut agents, positions, velocities, targets, max): Self::SystemData) {
-        let viewing_distance = 600.0; // distance that an agent can see a target
+        let viewing_distance = 800.0; // distance that an agent can see a target
         let vision_cone = PI; // agent field of view in radians
         for (agent, agent_pos, agent_velocity) in (&mut agents, &positions, &velocities).join() {
             let max = max.0;
@@ -98,6 +98,8 @@ impl<'a> System<'a> for Vision {
             // sort targets by distance from agent
             visible_targets.sort_by(|a, b| a.distance.partial_cmp(&(b.distance)).unwrap());
 
+            let ln_offset = 1.0 / (5.0 * 4.0_f32.ln());
+
             let neuron_inputs: Vec<f32> = (0..num_receptors)
                 .map(|i| {
                     // start and end of field of view for this receptor
@@ -115,7 +117,15 @@ impl<'a> System<'a> for Vision {
                     }
                     // sum up [0, 1) for each target based on distance to target (closer => 1)
                     seen_targets.iter().fold(0.0, |acc, t| {
-                        acc + ((viewing_distance - t.distance) / viewing_distance).max(0.0)
+                        // [0, 1], as linear function of distance to target (farther => 1)
+                        let linear = (t.distance as f32 / viewing_distance).min(1.0);
+                        // [0, 1) exponentially falling off from 1 to 0 (closer => 1)
+                        // 1/(5*ln(3*x+1)) - 1(5*ln(4))
+                        // https://www.wolframalpha.com/input/?i=1%2F%285*ln%283*x%2B1%29%29-%281%2F%285*ln%284%29%29%29+for+x+%3D+0+to+1
+                        let exponential = (1.0 / (5.0 * (3.0_f32.mul_add(linear, 1.0)).ln())
+                            - ln_offset)
+                            .clamp(0.0, 1.0);
+                        acc + exponential
                     })
                 })
                 .collect();
