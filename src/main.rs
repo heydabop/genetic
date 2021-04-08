@@ -3,7 +3,7 @@ mod neural;
 mod resources;
 mod systems;
 
-use components::{Agent, Force, Position, Score, Target, Velocity};
+use components::{Agent, Force, Position, Rank, Score, Target, Velocity};
 use neural::Network;
 use rand::{
     distributions::{Distribution, Uniform},
@@ -19,8 +19,9 @@ use std::collections::HashSet;
 use std::f32::consts::PI;
 use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
-    control::Control, print_stats::PrintStats, spawn_new_targets::SpawnNewTargets,
-    tick_counter::TickCounter, vision::Vision,
+    control::Control, crossover::Crossover, print_stats::PrintStats, rank_selection::RankSelection,
+    reset_scores::ResetScores, spawn_new_targets::SpawnNewTargets, tick_counter::TickCounter,
+    vision::Vision,
 };
 
 fn main() {
@@ -30,8 +31,8 @@ fn main() {
     let window_width = 1200;
     let window_height = 1200;
     let framerate = 120;
-    let num_targets = 40;
-    let num_agents = 20;
+    let num_targets = 60;
+    let num_agents = 40;
 
     let window = video_subsystem
         .window("genetic", window_width, window_height)
@@ -58,6 +59,7 @@ fn main() {
     world.insert(Ticks::default());
     world.register::<Agent>();
     world.register::<Score>();
+    world.register::<Rank>();
     world.register::<Target>();
     world.register::<Position>();
     world.register::<Velocity>();
@@ -108,7 +110,10 @@ fn main() {
         .with(ApplyVelocity, "apply_velocity", &["apply_force"])
         .with(CollisionCheck, "collision_check", &["apply_velocity"])
         .with(PrintStats, "print_stats", &["collision_check"])
+        .with(RankSelection, "rank_selection", &["collision_check"])
         .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
+        .with(ResetScores, "reset_scores", &["rank_selection"])
+        .with(Crossover, "crossover", &["rank_selection"])
         .build();
 
     let mut event_pump = sdl_context.event_pump().unwrap();

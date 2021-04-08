@@ -10,7 +10,7 @@ use std::iter::Iterator;
 // Due to this, the first layer doesn't really exist, at least in that it doesn't have neurons with a bias.
 // Instead we input raw values into the inputs of neurons in the second layer
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Neuron {
     bias: f32,
     input_weights: Vec<f32>,
@@ -26,7 +26,7 @@ impl Neuron {
         }
     }
 
-    pub fn propagate(&self, inputs: &[f32]) -> f32 {
+    fn propagate(&self, inputs: &[f32]) -> f32 {
         assert!(inputs.len() == self.input_weights.len());
 
         // Sum up (input * weight) across the input synapses
@@ -40,9 +40,21 @@ impl Neuron {
         // Add the neuron's bias and clamp negative values to 0.
         (input + self.bias).max(0.0)
     }
+
+    fn uniform_crossover<R: Rng + ?Sized>(&self, rng: &mut R, b: &Self) -> Self {
+        Self {
+            bias: if rng.gen::<bool>() { self.bias } else { b.bias },
+            input_weights: self
+                .input_weights
+                .iter()
+                .zip(b.input_weights.iter())
+                .map(|(&a, &b)| if rng.gen::<bool>() { a } else { b })
+                .collect(),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Layer {
     neurons: Vec<Neuron>,
 }
@@ -57,16 +69,29 @@ impl Layer {
         Self { neurons }
     }
 
-    pub fn propagate(&self, inputs: &[f32]) -> Vec<f32> {
+    fn propagate(&self, inputs: &[f32]) -> Vec<f32> {
         assert!(inputs.len() == self.neurons[0].input_weights.len());
 
         // Feed the input values to each neuron in the layer and return their outputs
 
         self.neurons.iter().map(|n| n.propagate(inputs)).collect()
     }
+
+    fn uniform_crossover<R: Rng + ?Sized>(&self, mut rng: &mut R, b: &Self) -> Self {
+        assert_eq!(self.neurons.len(), b.neurons.len());
+
+        Self {
+            neurons: self
+                .neurons
+                .iter()
+                .zip(b.neurons.iter())
+                .map(|(a, b)| a.uniform_crossover(&mut rng, b))
+                .collect(),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Network {
     layers: Vec<Layer>,
 }
@@ -116,6 +141,18 @@ impl Network {
 
     pub fn output_size(&self) -> usize {
         self.layers.last().unwrap().neurons.len()
+    }
+
+    pub fn uniform_crossover<R: Rng + ?Sized>(&self, mut rng: &mut R, b: &Self) -> Self {
+        assert_eq!(self.layers.len(), b.layers.len());
+        Self {
+            layers: self
+                .layers
+                .iter()
+                .zip(b.layers.iter())
+                .map(|(a, b)| a.uniform_crossover(&mut rng, b))
+                .collect(),
+        }
     }
 }
 

@@ -8,7 +8,7 @@ impl<'a> System<'a> for PrintStats {
     type SystemData = (ReadStorage<'a, Score>, ReadExpect<'a, Ticks>);
 
     fn run(&mut self, (scores, ticks): Self::SystemData) {
-        if ticks.get() % 3600 != 0 {
+        if ticks.get() % 7200 != 0 {
             return;
         }
         let mut total = 0;

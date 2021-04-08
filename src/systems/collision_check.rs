@@ -13,9 +13,9 @@ impl<'a> System<'a> for CollisionCheck {
         Entities<'a>,
     );
 
-    fn run(&mut self, (position, mut agent, target, mut hit_targets, entities): Self::SystemData) {
+    fn run(&mut self, (position, mut score, target, mut hit_targets, entities): Self::SystemData) {
         let hit_targets = &mut (hit_targets.0);
-        for (pos, agent) in (&position, &mut agent).join() {
+        for (pos, score) in (&position, &mut score).join() {
             for (target, _, e) in (&position, &target, &entities).join() {
                 // bounding box check
                 if (pos.x - target.x).abs() < 4.0 && (pos.y - target.y).abs() < 4.0 {
@@ -24,7 +24,7 @@ impl<'a> System<'a> for CollisionCheck {
                         // It's possible for multiple agents to hit the same target in a single tick here
                         // I'm okay with this because it seems "confusing" for an agent to follow behavior that normally results in a hit and it suddenly get nothing
                         hit_targets.insert(e.id());
-                        agent.inc();
+                        score.inc();
                     }
                 }
             }

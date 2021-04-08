@@ -28,6 +28,10 @@ impl Score {
     pub fn score(&self) -> u32 {
         self.score
     }
+
+    pub fn reset(&mut self) {
+        self.score = 0;
+    }
 }
 
 #[derive(Component, Debug, Default)]
@@ -59,4 +63,11 @@ impl Position {
 pub struct Velocity {
     pub heading: f32,
     pub magnitude: f32,
+}
+
+// The rank of a candidate in its population (higher is better)
+#[derive(Component, Debug, Default)]
+#[storage(VecStorage)]
+pub struct Rank {
+    pub rank: u32,
 }

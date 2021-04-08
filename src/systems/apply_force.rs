@@ -17,7 +17,7 @@ impl<'a> System<'a> for ApplyForce {
         for (vel, force) in (&mut velocities, &forces).join() {
             vel.magnitude = delta
                 .mul_add(force.translation, vel.magnitude)
-                .clamp(0.0, 150.0); //keep speed within reasonable bounds
+                .clamp(0.0, 200.0); //keep speed within reasonable bounds
             vel.heading = delta.mul_add(force.rotation, vel.heading);
             while vel.heading >= 2.0 * PI {
                 vel.heading -= 2.0 * PI;
