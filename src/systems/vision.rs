@@ -103,15 +103,20 @@ impl<'a> System<'a> for Vision {
                     // start and end of field of view for this receptor
                     let slice_start = start + (cone_slice * i as f32);
                     let slice_end = start + (cone_slice * (i + 1) as f32);
-                    // find closest target within cone of vision
-                    let closest_visible = visible_targets
-                        .iter()
-                        .find(|t| t.angle >= slice_start && t.angle < slice_end);
-                    // return value [0, 1) based on distance to target (closer => 1)
-                    match closest_visible {
-                        None => 0.0,
-                        Some(c) => ((viewing_distance - c.distance) / 800.0).max(0.0),
+                    // find the four nearest targets
+                    let mut seen_targets = vec![];
+                    for t in &visible_targets {
+                        if seen_targets.len() > 3 {
+                            break;
+                        }
+                        if t.angle >= slice_start && t.angle < slice_end {
+                            seen_targets.push(t);
+                        }
                     }
+                    // sum up [0, 1) for each target based on distance to target (closer => 1)
+                    seen_targets.iter().fold(0.0, |acc, t| {
+                        acc + ((viewing_distance - t.distance) / viewing_distance).max(0.0)
+                    })
                 })
                 .collect();
 

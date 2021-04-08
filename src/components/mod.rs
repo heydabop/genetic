@@ -65,9 +65,9 @@ pub struct Velocity {
     pub magnitude: f32,
 }
 
-// The rank of a candidate in its population (higher is better)
+// The fitness of a candidate in its population (higher is better)
 #[derive(Component, Debug, Default)]
 #[storage(VecStorage)]
-pub struct Rank {
-    pub rank: u32,
+pub struct Fitness {
+    pub fitness: u32,
 }

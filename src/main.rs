@@ -3,7 +3,7 @@ mod neural;
 mod resources;
 mod systems;
 
-use components::{Agent, Force, Position, Rank, Score, Target, Velocity};
+use components::{Agent, Fitness, Force, Position, Score, Target, Velocity};
 use neural::Network;
 use rand::{
     distributions::{Distribution, Uniform},
@@ -21,8 +21,8 @@ use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
     control::Control, crossover::Crossover, mutate::Mutate, print_stats::PrintStats,
     rank_selection::RankSelection, reset_positions::ResetPositions, reset_scores::ResetScores,
-    reset_velocities::ResetVelocities, spawn_new_targets::SpawnNewTargets,
-    tick_counter::TickCounter, vision::Vision,
+    reset_velocities::ResetVelocities, roulette_selection::RouletteSelection,
+    spawn_new_targets::SpawnNewTargets, tick_counter::TickCounter, vision::Vision,
 };
 
 fn main() {
@@ -32,8 +32,8 @@ fn main() {
     let window_width = 1200;
     let window_height = 1200;
     let framerate = 120;
-    let num_targets = 70;
-    let num_agents = 45;
+    let num_targets = 55;
+    let num_agents = 30;
     let population_lifetime_seconds = 40;
 
     let window = video_subsystem
@@ -64,7 +64,7 @@ fn main() {
     ));
     world.register::<Agent>();
     world.register::<Score>();
-    world.register::<Rank>();
+    world.register::<Fitness>();
     world.register::<Target>();
     world.register::<Position>();
     world.register::<Velocity>();
@@ -117,10 +117,10 @@ fn main() {
         .with(PrintStats, "print_stats", &["collision_check"])
         .with(SpawnNewTargets, "spawn_new_targets", &["collision_check"])
         .with(ResetVelocities, "reset_velocities", &["collision_check"])
-        .with(RankSelection, "rank_selection", &["collision_check"])
+        .with(RankSelection, "selection", &["collision_check"])
         .with(ResetPositions, "reset_positions", &["spawn_new_targets"])
-        .with(ResetScores, "reset_scores", &["rank_selection"])
-        .with(Crossover, "crossover", &["rank_selection"])
+        .with(ResetScores, "reset_scores", &["selection"])
+        .with(Crossover, "crossover", &["selection"])
         .with(Mutate, "mutate", &["crossover"])
         .build();
 

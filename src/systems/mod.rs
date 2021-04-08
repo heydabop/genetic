@@ -9,6 +9,7 @@ pub mod rank_selection;
 pub mod reset_positions;
 pub mod reset_scores;
 pub mod reset_velocities;
+pub mod roulette_selection;
 pub mod spawn_new_targets;
 pub mod tick_counter;
 pub mod vision;
