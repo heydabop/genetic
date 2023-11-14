@@ -1,7 +1,7 @@
 use crate::components::Position;
 use crate::resources::{HitTargets, MaxPos};
 use rand::{thread_rng, Rng};
-use specs::{prelude::*, System, WriteStorage};
+use specs::{prelude::*, RunningTime, System, WriteStorage};
 
 pub struct SpawnNewTargets;
 
@@ -21,5 +21,9 @@ impl<'a> System<'a> for SpawnNewTargets {
             pos.x = thread_rng().gen_range(0.0..max.x);
             pos.y = thread_rng().gen_range(0.0..max.y);
         });
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::Short
     }
 }

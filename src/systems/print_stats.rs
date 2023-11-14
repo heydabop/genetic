@@ -1,6 +1,6 @@
 use crate::components::Score;
 use crate::resources::{ResetInterval, Ticks};
-use specs::{prelude::*, ReadExpect, ReadStorage, System};
+use specs::{prelude::*, ReadExpect, ReadStorage, RunningTime, System};
 
 pub struct PrintStats;
 
@@ -37,5 +37,9 @@ impl<'a> System<'a> for PrintStats {
             max,
             total
         );
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::VeryShort
     }
 }

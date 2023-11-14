@@ -185,29 +185,29 @@ fn main() {
             skip = false;
         }
 
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::G),
-                    ..
-                } => {
-                    skip = true;
-                    skip_start = Instant::now();
-                    skip_tick = ticks;
-                }
-                _ => {}
-            }
-        }
-
         dispatcher.dispatch(&world);
         world.maintain();
 
         if !skip {
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => break 'running,
+                    Event::KeyDown {
+                        keycode: Some(Keycode::G),
+                        ..
+                    } => {
+                        skip = true;
+                        skip_start = Instant::now();
+                        skip_tick = ticks;
+                    }
+                    _ => {}
+                }
+            }
+
             fps_manager.delay();
         }
     }

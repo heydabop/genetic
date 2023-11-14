@@ -1,6 +1,6 @@
 use crate::components::{Agent, Position, Target, Velocity};
 use crate::resources::MaxPos;
-use specs::{prelude::*, ReadStorage, System, WriteStorage};
+use specs::{prelude::*, ReadStorage, RunningTime, System, WriteStorage};
 use std::f32::consts::PI;
 
 struct DistanceAngle {
@@ -132,5 +132,9 @@ impl<'a> System<'a> for Vision {
 
             agent.inputs = Some(neuron_inputs);
         }
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::Long
     }
 }

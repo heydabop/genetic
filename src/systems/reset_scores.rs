@@ -1,6 +1,6 @@
 use crate::components::Score;
 use crate::resources::{ResetInterval, Ticks};
-use specs::{prelude::*, ReadExpect, System, WriteStorage};
+use specs::{prelude::*, ReadExpect, RunningTime, System, WriteStorage};
 
 pub struct ResetScores;
 
@@ -19,5 +19,9 @@ impl<'a> System<'a> for ResetScores {
         for s in (&mut scores).join() {
             s.reset();
         }
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::VeryShort
     }
 }

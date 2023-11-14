@@ -1,6 +1,6 @@
 use crate::components::{Position, Score, Target};
 use crate::resources::HitTargets;
-use specs::{prelude::*, ReadStorage, System, WriteStorage};
+use specs::{prelude::*, ReadStorage, RunningTime, System, WriteStorage};
 
 pub struct CollisionCheck;
 
@@ -29,5 +29,9 @@ impl<'a> System<'a> for CollisionCheck {
                 }
             }
         }
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::Long
     }
 }

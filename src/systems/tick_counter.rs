@@ -1,5 +1,5 @@
 use crate::resources::Ticks;
-use specs::{System, WriteExpect};
+use specs::{RunningTime, System, WriteExpect};
 
 pub struct TickCounter;
 
@@ -8,5 +8,9 @@ impl<'a> System<'a> for TickCounter {
 
     fn run(&mut self, mut ticks: Self::SystemData) {
         ticks.inc();
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::VeryShort
     }
 }

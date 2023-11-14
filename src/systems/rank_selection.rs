@@ -1,6 +1,6 @@
 use crate::components::{Fitness, Score};
 use crate::resources::{ResetInterval, Ticks};
-use specs::{prelude::*, ReadExpect, ReadStorage, System, WriteStorage};
+use specs::{prelude::*, ReadExpect, ReadStorage, RunningTime, System, WriteStorage};
 
 pub struct RankSelection;
 
@@ -36,5 +36,9 @@ impl<'a> System<'a> for RankSelection {
                 .insert(entity, Fitness { fitness })
                 .expect("Unable to overwrite fitness");
         }
+    }
+
+    fn running_time(&self) -> RunningTime {
+        RunningTime::Short
     }
 }
