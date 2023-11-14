@@ -15,8 +15,8 @@ use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use specs::{prelude::*, World, WorldExt};
-use std::collections::HashSet;
 use std::f32::consts::PI;
+use std::{collections::HashSet, time::Instant};
 use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
     control::Control, crossover::Crossover, mutate::Mutate, print_stats::PrintStats,
@@ -124,6 +124,8 @@ fn main() {
         .build();
 
     let mut skip = false;
+    let mut skip_tick = 0;
+    let mut skip_start = Instant::now();
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut fps_manager = sdl2::gfx::framerate::FPSManager::new();
     fps_manager
@@ -138,6 +140,12 @@ fn main() {
 
         if skip && ticks % world.read_resource::<ResetInterval>().0 == 0 {
             skip = false;
+            let elapsed = skip_start.elapsed().as_secs_f32();
+            let elapsed_ticks = ticks - skip_tick;
+            println!(
+                "Seconds: {elapsed:.2} - Ticks: {elapsed_ticks} - Tickrate: {:.2}",
+                elapsed_ticks as f32 / elapsed
+            );
         }
 
         if !skip && (framerate_ratio == 1 || ticks % framerate_ratio == 0) {
@@ -187,7 +195,11 @@ fn main() {
                 Event::KeyDown {
                     keycode: Some(Keycode::G),
                     ..
-                } => skip = true,
+                } => {
+                    skip = true;
+                    skip_start = Instant::now();
+                    skip_tick = ticks;
+                }
                 _ => {}
             }
         }
