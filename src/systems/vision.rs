@@ -87,7 +87,7 @@ impl<'a> System<'a> for Vision {
                     angle = agent_velocity.heading - angle;
                     if angle >= start && angle < end {
                         Some(DistanceAngle {
-                            distance: target_pos.distance(&agent_pos),
+                            distance: target_pos.distance(agent_pos),
                             angle,
                         })
                     } else {
@@ -118,7 +118,7 @@ impl<'a> System<'a> for Vision {
                     // sum up [0, 1) for each target based on distance to target (closer => 1)
                     seen_targets.iter().fold(0.0, |acc, t| {
                         // [0, 1], as linear function of distance to target (farther => 1)
-                        let linear = (t.distance as f32 / viewing_distance).min(1.0);
+                        let linear = (t.distance / viewing_distance).min(1.0);
                         // [0, 1) exponentially falling off from 1 to 0 (closer => 1)
                         // 1/(5*ln(3*x+1)) - 1(5*ln(4))
                         // https://www.wolframalpha.com/input/?i=1%2F%285*ln%283*x%2B1%29%29-%281%2F%285*ln%284%29%29%29+for+x+%3D+0+to+1

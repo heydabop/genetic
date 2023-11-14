@@ -23,8 +23,8 @@ impl<'a> System<'a> for ResetPositions {
         }
         let max = max.0;
 
-        let x_range = Uniform::from(0.0..max.x as f32);
-        let y_range = Uniform::from(0.0..max.y as f32);
+        let x_range = Uniform::from(0.0..max.x);
+        let y_range = Uniform::from(0.0..max.y);
         let mut rng = thread_rng();
 
         for p in (&mut positions).join() {

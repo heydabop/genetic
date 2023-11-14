@@ -21,8 +21,8 @@ use systems::{
     apply_force::ApplyForce, apply_velocity::ApplyVelocity, collision_check::CollisionCheck,
     control::Control, crossover::Crossover, mutate::Mutate, print_stats::PrintStats,
     rank_selection::RankSelection, reset_positions::ResetPositions, reset_scores::ResetScores,
-    reset_velocities::ResetVelocities, roulette_selection::RouletteSelection,
-    spawn_new_targets::SpawnNewTargets, tick_counter::TickCounter, vision::Vision,
+    reset_velocities::ResetVelocities, spawn_new_targets::SpawnNewTargets,
+    tick_counter::TickCounter, vision::Vision,
 };
 
 fn main() {

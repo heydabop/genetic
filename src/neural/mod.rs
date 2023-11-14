@@ -256,7 +256,7 @@ mod tests {
         let a = Neuron::new(0.1, (0..10).map(|i| i as f32).collect());
         let b = Neuron::new(-0.1, (0..10).map(|i| (i * 20 + 1) as f32).collect());
 
-        let c = (&a).crossover_uniform(&mut rng, &b);
+        let c = a.crossover_uniform(&mut rng, &b);
         assert_eq!(
             c,
             Neuron {
